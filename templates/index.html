@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tone Translator AI ✨</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="light">
+<div class="container">
+    <div class="header">
+        <h1>✨ Tone Translator AI</h1>
+        <p class="subtitle" id="subtitle">Detect emotions & sarcasm with advanced AI</p>
+    </div>
+
+    <div class="input-section">
+        <textarea id="userText" placeholder="Type your message here..."></textarea>
+        <div class="char-count" id="charCount">0 characters</div>
+    </div>
+
+    <div id="result" class="result-card"></div>
+
+    <div class="settings-panel">
+        <h3 id="settingsTitle">⚙️ Settings</h3>
+        
+        <div class="setting-group">
+            <label class="setting-label" id="langLabel">
+                <span class="setting-icon">🌍</span>
+                <span id="langText">Language</span>
+                <select id="languageSelect" class="modern-select">
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                </select>
+            </label>
+        </div>
+
+        <div class="setting-group">
+            <label class="setting-label" id="emojiLabel">
+                <span class="setting-icon">😊</span>
+                <span id="emojiText">Emoji Style</span>
+                <select id="emojiStyle" class="modern-select">
+                    <option value="default">Default</option>
+                    <option value="fun">Fun</option>
+                    <option value="minimal">Minimal</option>
+                </select>
+            </label>
+        </div>
+
+        <div class="setting-group">
+            <label class="toggle-label">
+                <input type="checkbox" id="ttsToggle" class="toggle-checkbox">
+                <span class="toggle-slider"></span>
+                <span id="ttsText">Text-to-Speech</span>
+            </label>
+        </div>
+
+        <div class="setting-group">
+            <label class="toggle-label">
+                <input type="checkbox" id="contrastToggle" class="toggle-checkbox">
+                <span class="toggle-slider"></span>
+                <span id="contrastText">High Contrast</span>
+            </label>
+        </div>
+
+        <button onclick="toggleTheme()" class="theme-button" id="themeButton">
+            <span id="themeIcon">🌙</span>
+            <span id="themeText">Dark Mode</span>
+        </button>
+    </div>
+</div>
+
+<script>
+// UI Text translations
+const uiTranslations = {
+    en: {
+        subtitle: "Detect emotions & sarcasm with advanced AI",
+        placeholder: "Type your message here...",
+        settingsTitle: "⚙️ Settings",
+        language: "Language",
+        emojiStyle: "Emoji Style",
+        tts: "Text-to-Speech",
+        contrast: "High Contrast",
+        darkMode: "Dark Mode",
+        lightMode: "Light Mode",
+        characters: "characters",
+        tone: "Tone"
+    },
+    es: {
+        subtitle: "Detecta emociones y sarcasmo con IA avanzada",
+        placeholder: "Escribe tu mensaje aquí...",
+        settingsTitle: "⚙️ Configuración",
+        language: "Idioma",
+        emojiStyle: "Estilo de Emoji",
+        tts: "Texto a Voz",
+        contrast: "Alto Contraste",
+        darkMode: "Modo Oscuro",
+        lightMode: "Modo Claro",
+        characters: "caracteres",
+        tone: "Tono"
+    }
+};
+
+let currentLanguage = "en";
+
+document.addEventListener("DOMContentLoaded", () => {
+    const tts = localStorage.getItem("ttsEnabled");
+    const emojiStyle = localStorage.getItem("emojiStyle");
+    const darkMode = localStorage.getItem("darkMode");
+    const contrast = localStorage.getItem("contrast");
+    const language = localStorage.getItem("language") || "en";
+
+    if (tts === "true") document.getElementById("ttsToggle").checked = true;
+    if (emojiStyle) document.getElementById("emojiStyle").value = emojiStyle;
+    if (darkMode === "true") {
+        document.body.className = "dark";
+        updateThemeButton(true);
+    }
+    if (contrast === "true") document.getElementById("contrastToggle").checked = true;
+    if (language) {
+        document.getElementById("languageSelect").value = language;
+        currentLanguage = language;
+        updateUILanguage(language);
+    }
+
+    applyContrast();
+});
+
+const userText = document.getElementById("userText");
+let typingTimer;
+
+userText.addEventListener("input", () => {
+    updateCharCount();
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(translateTone, 600);
+});
+
+function updateCharCount() {
+    const count = userText.value.length;
+    const text = uiTranslations[currentLanguage].characters;
+    document.getElementById("charCount").innerText = `${count} ${text}`;
+}
+
+document.getElementById("languageSelect").addEventListener("change", (e) => {
+    currentLanguage = e.target.value;
+    localStorage.setItem("language", currentLanguage);
+    updateUILanguage(currentLanguage);
+    if (userText.value.trim()) {
+        translateTone();
+    }
+});
+
+function updateUILanguage(lang) {
+    const trans = uiTranslations[lang];
+    document.getElementById("subtitle").innerText = trans.subtitle;
+    document.getElementById("userText").placeholder = trans.placeholder;
+    document.getElementById("settingsTitle").innerText = trans.settingsTitle;
+    document.getElementById("langText").innerText = trans.language;
+    document.getElementById("emojiText").innerText = trans.emojiStyle;
+    document.getElementById("ttsText").innerText = trans.tts;
+    document.getElementById("contrastText").innerText = trans.contrast;
+    updateCharCount();
+    updateThemeButton(document.body.classList.contains("dark"));
+}
+
+async function translateTone() {
+    const text = userText.value.trim();
+    if (!text) {
+        document.getElementById("result").innerHTML = "";
+        return;
+    }
+
+    const ttsEnabled = document.getElementById("ttsToggle").checked;
+    const emojiStyle = document.getElementById("emojiStyle").value;
+    const language = currentLanguage;
+    
+    localStorage.setItem("ttsEnabled", ttsEnabled);
+    localStorage.setItem("emojiStyle", emojiStyle);
+
+    try {
+        const response = await fetch("/translate-tone", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({text, emoji_style: emojiStyle, language})
+        });
+
+        const data = await response.json();
+        if (data.error) {
+            document.getElementById("result").innerHTML = `<p class="error">${data.error}</p>`;
+            return;
+        }
+
+        const toneLabel = uiTranslations[currentLanguage].tone;
+        document.getElementById("result").innerHTML = `
+            <div class="tone-badge ${data.tone.toLowerCase()}">
+                <span class="tone-emoji">${data.emoji}</span>
+                <span class="tone-text">${data.tone_label}</span>
+            </div>
+            <p class="analyzed-text">${data.translated_text}</p>
+        `;
+
+        // Browser-based Text-to-Speech
+        if (ttsEnabled) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = language === "es" ? "es-ES" : "en-US";
+            utterance.rate = 1;
+            utterance.pitch = 1;
+            window.speechSynthesis.speak(utterance);
+        }
+    } catch (error) {
+        console.error("Error:", error);
+        document.getElementById("result").innerHTML = `<p class="error">Error analyzing tone</p>`;
+    }
+}
+
+function toggleTheme() {
+    const body = document.body;
+    body.classList.toggle("dark");
+    const isDark = body.classList.contains("dark");
+    localStorage.setItem("darkMode", isDark);
+    updateThemeButton(isDark);
+}
+
+function updateThemeButton(isDark) {
+    const icon = document.getElementById("themeIcon");
+    const text = document.getElementById("themeText");
+    const trans = uiTranslations[currentLanguage];
+    
+    if (isDark) {
+        icon.innerText = "☀️";
+        text.innerText = trans.lightMode;
+    } else {
+        icon.innerText = "🌙";
+        text.innerText = trans.darkMode;
+    }
+}
+
+const contrastToggle = document.getElementById("contrastToggle");
+contrastToggle.addEventListener("change", () => {
+    applyContrast();
+    localStorage.setItem("contrast", contrastToggle.checked);
+});
+
+function applyContrast() {
+    document.body.style.filter = contrastToggle.checked ? "contrast(150%)" : "contrast(100%)";
+}
+</script>
+</body>
+</html>
