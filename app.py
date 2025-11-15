@@ -18,7 +18,7 @@ logging.basicConfig(
     handlers=[logging.StreamHandler()]
 )
 
-# Configure Gemini API
+# Configure Gemini API <3
 api_key = "AIzaSyBJMEecX8CA434AyxTW17PjsDlQRkuWGjo"
 if not api_key:
     logging.error("GEMINI_API_KEY not found in environment variables")
