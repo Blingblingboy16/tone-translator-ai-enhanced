@@ -19,13 +19,13 @@ logging.basicConfig(
 )
 
 # Configure Gemini API
-api_key = os.getenv("GEMINI_API_KEY")
+api_key = "AIzaSyBJMEecX8CA434AyxTW17PjsDlQRkuWGjo"
 if not api_key:
     logging.error("GEMINI_API_KEY not found in environment variables")
     raise ValueError("GEMINI_API_KEY environment variable is required")
     
 genai.configure(api_key=api_key)
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-2.5-flash')
 
 def analyze_tone(text):
     """Use Gemini to analyze the tone of the text with enhanced sarcasm detection."""
