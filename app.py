@@ -11,14 +11,12 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-# Add file handler
-file_handler = logging.FileHandler('debug.log')
-file_handler.setLevel(logging.INFO)
-file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-logging.getLogger().addHandler(file_handler)
+# Configure logging (console only for Render)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler()]
+)
 
 # Configure Gemini API
 api_key = os.getenv("GEMINI_API_KEY")
@@ -27,7 +25,7 @@ if not api_key:
     raise ValueError("GEMINI_API_KEY environment variable is required")
     
 genai.configure(api_key=api_key)
-model = genai.GenerativeModel('gemini-2.5-flash')
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 def analyze_tone(text):
     """Use Gemini to analyze the tone of the text with enhanced sarcasm detection."""
